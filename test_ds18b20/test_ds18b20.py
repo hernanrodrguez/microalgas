@@ -1,10 +1,13 @@
+# Referencia
+# https://www.waveshare.com/wiki/Raspberry_Pi_Tutorial_Series:_1-Wire_DS18B20_Sensor#:~:text=DS18B20%20is%20a%20common%20temperature,and%20with%20the%20Raspbian%20OS
+
 import os
 import glob
 import time
 from datetime import datetime
 
-os.system('modprobe w1-gpio')
-os.system('modprobe w1-therm')
+#os.system('modprobe w1-gpio')
+#os.system('modprobe w1-therm')
 
 base_dir = '/sys/bus/w1/devices/'
 device_folder = glob.glob(base_dir + '28*')[0]
