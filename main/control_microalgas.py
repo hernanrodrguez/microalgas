@@ -13,6 +13,13 @@ from AtlasI2C import (
 	 AtlasI2C
 )
 
+def str_to_time(m_str):
+	return datetime.strptime(m_str, "%H:%M:%S").time()
+
+def time_to_int(m_time):
+	dt = datetime.strptime(m_time, "%H:%M:%S").time().second + m_time.minute*60 + m_time.hour*3600
+	return dt.second + dt.minute*60 + dt.hour*3600
+
 class Luz():
     self.estado = REPOSO
     self.pi_pwm = None
@@ -25,13 +32,13 @@ class Luz():
     self.intensidad_minima = 0
     self.intensidad_actual = 0
 
-    def __init__(self, gpio_num, subida_inicio, subida_fin, bajada_inicio, bajada_fin, intensidad_maxima, intensidad_minima):
+    def __init__(self, gpio_num, subida_inicio, subida_fin, bajada_inicio, bajada_fin, intensidad_maxima, intensidad_minima, hora_actual):
         self.gpio_num = gpio_num
         self.pin_electrovalvula = pin_electrovalvula
-        self.subida_inicio = subida_inicio
-        self.subida_fin = subida_fin
-        self.bajada_inicio = bajada_inicio
-        self.bajada_fin = bajada_fin
+        self.subida_inicio = time_to_int(subida_inicio)
+        self.subida_fin = time_to_int(subida_fin)
+        self.bajada_inicio = time_to_int(bajada_inicio)
+        self.bajada_fin = time_to_int(bajada_fin)
         self.intensidad_maxima = intensidad_maxima
         self.intensidad_minima = intensidad_minima
 
@@ -41,8 +48,23 @@ class Luz():
         self.pi_pwm = GPIO.PWM(gpio_num, 100)
         self.pi_pwm.start(100)
 
+		# Esto es por si al arrancar caigo en un periodo de reposo, que arranque con la intensidad correcta
+		if time_to_int(str_to_time(hora_actual)) > bajada_fin or time_to_int(hora_actual) < subida_inicio: # REPOSO (intensidad_minima)
+			self.intensidad_actual = intensidad_minima
+            self.pi_pwm.ChangeDutyCycle(intensidad_minima)
+		elif time_to_int(hora_actual) > subida_fin and time_to_int(hora_actual) < bajada_inicio: # REPOSO (intensidad maxima)
+			self.intensidad_actual = intensidad_maxima
+			self.pi_pwm.ChangeDutyCycle(intensidad_maxima)
+
+		# https://stackoverflow.com/questions/15105112/compare-only-time-part-in-datetime-python
+		# Este lin es para quedarme solo con las hora y los minutos de una fecha y comparar a partir de esto
+		# https://stackoverflow.com/questions/10663720/how-to-convert-a-time-string-to-seconds
+		# Este link es para poder pasar la hora a cantidad de segundos (int) de esta forma voy a poder
+		# usar en la funcion remap 2 valores enteros y no los datetime que iban a hacer un lio barbaro en el calculo
+
     def update(self, hora_actual):
-        if hora_actual > self.bajada_fin and hora_actual < self.subida_inicio: # REPOSO
+		hora_actual = time_to_int(hora_actual)
+        if hora_actual > self.bajada_fin or hora_actual < self.subida_inicio: # REPOSO (intensidad minima)
             print("LEDS EN REPOSO (minima intensidad) - PWM:", self.intensidad_actual)
         elif hora_actual > self.subida_inicio and hora_actual < self.subida_fin: # SUBIENDO
             print("LEDS SUBIENDO - PWM:", self.intensidad_actual)
@@ -139,11 +161,11 @@ def main():
         elif dev.get_device_info().upper().startswith("PH"):
             sensor_ph = dev
 
-    led_1 = Luz(22, subida_inicio, subida_fin, bajada_inicio, bajada_fin, 90, 10)
-    led_2 = Luz(23, subida_inicio, subida_fin, bajada_inicio, bajada_fin, 90, 10)
-    led_3 = Luz(24, subida_inicio, subida_fin, bajada_inicio, bajada_fin, 90, 10)
-    led_4 = Luz(25, subida_inicio, subida_fin, bajada_inicio, bajada_fin, 90, 10)
-    led_5 = Luz(27, subida_inicio, subida_fin, bajada_inicio, bajada_fin, 90, 10)
+    led_1 = Luz(22, "08:00", "12:00", "14:00", "18:00", 90, 10)
+    led_2 = Luz(23, "08:00", "12:00", "14:00", "18:00", 90, 10)
+    led_3 = Luz(24, "08:00", "12:00", "14:00", "18:00", 90, 10)
+    led_4 = Luz(25, "08:00", "12:00", "14:00", "18:00", 90, 10)
+    led_5 = Luz(27, "08:00", "12:00", "14:00", "18:00", 90, 10)
 
     leds = []
     leds.append(led_1)
