@@ -48,11 +48,12 @@ class Luz():
         self.pi_pwm = GPIO.PWM(gpio_num, 100)
         self.pi_pwm.start(100)
 
+		hora_actual = time_to_int(hora_actual)
 		# Esto es por si al arrancar caigo en un periodo de reposo, que arranque con la intensidad correcta
-		if time_to_int(str_to_time(hora_actual)) > bajada_fin or time_to_int(hora_actual) < subida_inicio: # REPOSO (intensidad_minima)
+		if hora_actual > bajada_fin or hora_actual < subida_inicio: # REPOSO (intensidad_minima)
 			self.intensidad_actual = intensidad_minima
             self.pi_pwm.ChangeDutyCycle(intensidad_minima)
-		elif time_to_int(hora_actual) > subida_fin and time_to_int(hora_actual) < bajada_inicio: # REPOSO (intensidad maxima)
+		elif hora_actual > subida_fin and hora_actual < bajada_inicio: # REPOSO (intensidad maxima)
 			self.intensidad_actual = intensidad_maxima
 			self.pi_pwm.ChangeDutyCycle(intensidad_maxima)
 
@@ -133,6 +134,7 @@ def mde():
         sensor_ph.write("R")
         time.sleep(sensor_ph.long_timeout)
         print(sensor_ph.read())
+		# Controlar GPIOS
         state = READ_DO
     elif state == READ_DO:
         print("READ_DO")
