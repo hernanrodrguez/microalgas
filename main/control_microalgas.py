@@ -14,31 +14,23 @@ from AtlasI2C import (
 	 AtlasI2C
 )
 
-state = constants.READ_PH
+state = constants.READ_DO
+sensor_do = AtlasI2C()
+sensor_ph = AtlasI2C()
+leds = []
 
 def str_to_time(m_str):
 	return datetime.strptime(m_str, "%H:%M:%S").time()
 
 def time_to_int(m_time):
-	m_time = datetime.strptime(m_time, "%H:%M").time()
-	dt = m_time.second + m_time.minute*60 + m_time.hour*3600
-	return dt.second + dt.minute*60 + dt.hour*3600
+	m_time = datetime.strptime(m_time, "%H:%M:%S").time()
+	return m_time.second + m_time.minute*60 + m_time.hour*3600
 
 class Luz():
-    self.estado = REPOSO
-    self.pi_pwm = None
-    self.gpio_num = 0
-    self.subida_inicio = 0
-    self.subida_fin = 0
-    self.bajada_inicio = 0
-    self.bajada_fin = 0
-    self.intensidad_maxima = 100
-    self.intensidad_minima = 0
-    self.intensidad_actual = 0
 
     def __init__(self, gpio_num, subida_inicio, subida_fin, bajada_inicio, bajada_fin, intensidad_maxima, intensidad_minima, hora_actual):
         self.gpio_num = gpio_num
-        self.pin_electrovalvula = pin_electrovalvula
+        self.pin_electrovalvula = gpio_num
         self.subida_inicio = time_to_int(subida_inicio)
         self.subida_fin = time_to_int(subida_fin)
         self.bajada_inicio = time_to_int(bajada_inicio)
@@ -52,23 +44,23 @@ class Luz():
         self.pi_pwm = GPIO.PWM(gpio_num, 100)
         self.pi_pwm.start(100)
 
-		hora_actual = time_to_int(hora_actual)
-		# Esto es por si al arrancar caigo en un periodo de reposo, que arranque con la intensidad correcta
-		if hora_actual > bajada_fin or hora_actual < subida_inicio: # REPOSO (intensidad_minima)
-			self.intensidad_actual = intensidad_minima
+        hora_actual = time_to_int(hora_actual)
+	# Esto es por si al arrancar caigo en un periodo de reposo, que arranque con la intensidad correcta
+        if hora_actual > self.bajada_fin or hora_actual < self.subida_inicio: # REPOSO (intensidad_minima)
+            self.intensidad_actual = intensidad_minima
             self.pi_pwm.ChangeDutyCycle(intensidad_minima)
-		elif hora_actual > subida_fin and hora_actual < bajada_inicio: # REPOSO (intensidad maxima)
-			self.intensidad_actual = intensidad_maxima
-			self.pi_pwm.ChangeDutyCycle(intensidad_maxima)
+        elif hora_actual > self.ubida_fin and hora_actual < self.bajada_inicio: # REPOSO (intensidad maxima)
+            self.intensidad_actual = intensidad_maxima
+            self.pi_pwm.ChangeDutyCycle(intensidad_maxima)
 
-		# https://stackoverflow.com/questions/15105112/compare-only-time-part-in-datetime-python
-		# Este lin es para quedarme solo con las hora y los minutos de una fecha y comparar a partir de esto
-		# https://stackoverflow.com/questions/10663720/how-to-convert-a-time-string-to-seconds
-		# Este link es para poder pasar la hora a cantidad de segundos (int) de esta forma voy a poder
-		# usar en la funcion remap 2 valores enteros y no los datetime que iban a hacer un lio barbaro en el calculo
+	# https://stackoverflow.com/questions/15105112/compare-only-time-part-in-datetime-python
+	# Este lin es para quedarme solo con las hora y los minutos de una fecha y comparar a partir de esto
+	# https://stackoverflow.com/questions/10663720/how-to-convert-a-time-string-to-seconds
+	# Este link es para poder pasar la hora a cantidad de segundos (int) de esta forma voy a poder
+	# usar en la funcion remap 2 valores enteros y no los datetime que iban a hacer un lio barbaro en el calculo
 
     def update(self, hora_actual):
-		hora_actual = time_to_int(hora_actual)
+        hora_actual = time_to_int(hora_actual)
         if hora_actual > self.bajada_fin or hora_actual < self.subida_inicio: # REPOSO (intensidad minima)
             print("LEDS EN REPOSO (minima intensidad) - PWM:", self.intensidad_actual)
         elif hora_actual > self.subida_inicio and hora_actual < self.subida_fin: # SUBIENDO
@@ -133,6 +125,11 @@ def get_devices():
     return device_list
 
 def mde():
+    global state
+    global sensor_do
+    global sensor_ph
+    global leds
+    
     if state == constants.READ_PH:
         print("READ_PH")
         sensor_ph.write("R")
@@ -155,9 +152,12 @@ def mde():
     elif state == constants.SET_LEDS:
         for led in leds:
             led.update(time.strftime("%H:%M:%S", time.localtime()))
-        state = constants.READ_PH
+        state = constants.READ_DO
 
 def main():
+    global sensor_do
+    global sensor_ph
+    global leds
     ezo_device_list = get_devices()
 
     device = ezo_device_list[0]
@@ -175,7 +175,6 @@ def main():
     led_4 = Luz(25, "08:00:00", "12:00:00", "14:00:00", "18:00:00", 90, 10, time.strftime("%H:%M:%S", time.localtime()))
     led_5 = Luz(27, "08:00:00", "12:00:00", "14:00:00", "18:00:00", 90, 10, time.strftime("%H:%M:%S", time.localtime()))
 
-    leds = []
     leds.append(led_1)
     leds.append(led_2)
     leds.append(led_3)
