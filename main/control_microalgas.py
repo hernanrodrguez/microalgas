@@ -8,6 +8,7 @@ import os
 import glob
 import time
 from datetime import datetime
+from datetime import timedelta
 import RPi.GPIO as GPIO
 import constants
 from AtlasI2C import (
@@ -37,6 +38,7 @@ class Luz():
         self.bajada_fin = time_to_int(bajada_fin)
         self.intensidad_maxima = intensidad_maxima
         self.intensidad_minima = intensidad_minima
+        self.intensidad_actual = intensidad_minima
 
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BCM)
@@ -49,7 +51,7 @@ class Luz():
         if hora_actual > self.bajada_fin or hora_actual < self.subida_inicio: # REPOSO (intensidad_minima)
             self.intensidad_actual = intensidad_minima
             self.pi_pwm.ChangeDutyCycle(intensidad_minima)
-        elif hora_actual > self.ubida_fin and hora_actual < self.bajada_inicio: # REPOSO (intensidad maxima)
+        elif hora_actual > self.subida_fin and hora_actual < self.bajada_inicio: # REPOSO (intensidad maxima)
             self.intensidad_actual = intensidad_maxima
             self.pi_pwm.ChangeDutyCycle(intensidad_maxima)
 
@@ -130,6 +132,10 @@ def mde():
     global sensor_ph
     global leds
     
+    now = datetime.now() - timedelta(hours=4)
+    current_time = now.strftime("%H:%M:%S")
+    #print("hora actual:", current_time)
+    
     if state == constants.READ_PH:
         print("READ_PH")
         sensor_ph.write("R")
@@ -151,7 +157,7 @@ def mde():
         state = constants.SET_LEDS
     elif state == constants.SET_LEDS:
         for led in leds:
-            led.update(time.strftime("%H:%M:%S", time.localtime()))
+            led.update(current_time)
         state = constants.READ_DO
 
 def main():
@@ -168,12 +174,16 @@ def main():
             sensor_do = dev
         elif dev.get_device_info().upper().startswith("PH"):
             sensor_ph = dev
+    
+    now = datetime.now() - timedelta(hours=4)
+    current_time = now.strftime("%H:%M:%S")
+    print("hora actual:", current_time)
 
-    led_1 = Luz(22, "08:00:00", "12:00:00", "14:00:00", "18:00:00", 90, 10, time.strftime("%H:%M:%S", time.localtime()))
-    led_2 = Luz(23, "08:00:00", "12:00:00", "14:00:00", "18:00:00", 90, 10, time.strftime("%H:%M:%S", time.localtime()))
-    led_3 = Luz(24, "08:00:00", "12:00:00", "14:00:00", "18:00:00", 90, 10, time.strftime("%H:%M:%S", time.localtime()))
-    led_4 = Luz(25, "08:00:00", "12:00:00", "14:00:00", "18:00:00", 90, 10, time.strftime("%H:%M:%S", time.localtime()))
-    led_5 = Luz(27, "08:00:00", "12:00:00", "14:00:00", "18:00:00", 90, 10, time.strftime("%H:%M:%S", time.localtime()))
+    led_1 = Luz(22, "08:00:00", "12:00:00", "14:00:00", "18:00:00", 90, 10, current_time)
+    led_2 = Luz(23, "21:30:00", "21:35:00", "21:40:00", "21:45:00", 90, 10, current_time)
+    led_3 = Luz(24, "21:00:00", "22:00:00", "22:10:00", "23:00:00", 90, 10, current_time)
+    led_4 = Luz(25, "08:00:00", "12:00:00", "14:00:00", "18:00:00", 90, 10, current_time)
+    led_5 = Luz(27, "08:00:00", "12:00:00", "14:00:00", "18:00:00", 90, 10, current_time)
 
     leds.append(led_1)
     leds.append(led_2)
