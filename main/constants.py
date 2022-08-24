@@ -1,0 +1,4 @@
+READ_PH = 0
+READ_DO = 1
+READ_TEMP = 2
+SET_LEDS = 3
