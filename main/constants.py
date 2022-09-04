@@ -2,3 +2,5 @@ READ_PH = 0
 READ_DO = 1
 READ_TEMP = 2
 SET_LEDS = 3
+
+DATALOG_HEADER = "Fecha,Hora,Temperatura,DO,pH,LED1,LED2,LED3,LED4,LED5\n"

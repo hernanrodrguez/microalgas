@@ -21,6 +21,9 @@ sensor_ph = AtlasI2C()
 sensor_temp = AtlasI2C()
 leds = []
 
+datalog_fname = "logs/datalog.txt"
+debug_datalog_fname = "logs/debug_datalog.txt"
+
 def str_to_time(m_str):
 	return datetime.strptime(m_str, "%H:%M:%S").time()
 
@@ -133,16 +136,25 @@ def mde():
     global sensor_ph
     global sensor_temp
     global leds
-    
+
+
+	file_stat = os.stat(datalog_fname)
+	file = open(datalog_fname, 'a')
+	if file_stat.st_size == 0:
+		file.write(constants.DATALOG_HEADER)
+
     now = datetime.now() - timedelta(hours=4)
     current_time = now.strftime("%H:%M:%S")
+	file.write(now.strftime("%d/%m/%Y,%H:%M:%S,"))
     #print("hora actual:", current_time)
-    
+
     if state == constants.READ_PH:
         print("READ_PH")
         sensor_ph.write("R")
         time.sleep(sensor_ph.long_timeout)
-        print(sensor_ph.read())
+		value = sensor_ph.read()
+		#file.write(value)
+        print(value)
 		# Controlar GPIOS
         state = constants.READ_DO
     elif state == constants.READ_DO:
@@ -182,7 +194,7 @@ def main():
             sensor_ph = dev
         elif dev.get_device_info().upper().startswith("RTD"):
             sensor_temp = dev
-    
+
     now = datetime.now() - timedelta(hours=4)
     current_time = now.strftime("%H:%M:%S")
     print("hora actual:", current_time)
