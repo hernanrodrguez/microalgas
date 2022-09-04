@@ -15,9 +15,10 @@ from AtlasI2C import (
 	 AtlasI2C
 )
 
-state = constants.READ_DO
+state = constants.READ_PH
 sensor_do = AtlasI2C()
 sensor_ph = AtlasI2C()
+sensor_temp = AtlasI2C()
 leds = []
 
 def str_to_time(m_str):
@@ -130,6 +131,7 @@ def mde():
     global state
     global sensor_do
     global sensor_ph
+    global sensor_temp
     global leds
     
     now = datetime.now() - timedelta(hours=4)
@@ -152,17 +154,21 @@ def mde():
         state = constants.READ_TEMP
     elif state == constants.READ_TEMP:
         print("READ_TEMP")
+        sensor_temp.write("R")
+        time.sleep(sensor_temp.long_timeout)
+        print(sensor_temp.read())
         print(read_ds18b20())
 		# Controlar GPIOS
         state = constants.SET_LEDS
     elif state == constants.SET_LEDS:
         for led in leds:
             led.update(current_time)
-        state = constants.READ_DO
+        state = constants.READ_PH
 
 def main():
     global sensor_do
     global sensor_ph
+    global sensor_temp
     global leds
     ezo_device_list = get_devices()
 
@@ -174,6 +180,8 @@ def main():
             sensor_do = dev
         elif dev.get_device_info().upper().startswith("PH"):
             sensor_ph = dev
+        elif dev.get_device_info().upper().startswith("RTD"):
+            sensor_temp = dev
     
     now = datetime.now() - timedelta(hours=4)
     current_time = now.strftime("%H:%M:%S")
