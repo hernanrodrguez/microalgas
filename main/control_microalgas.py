@@ -11,6 +11,7 @@ from datetime import datetime
 from datetime import timedelta
 import RPi.GPIO as GPIO
 import constants
+
 from AtlasI2C import (
 	 AtlasI2C
 )
@@ -79,6 +80,9 @@ class Luz():
             print("LEDS BAJANDO - PWM:", self.intensidad_actual)
             self.intensidad_actual = remap(hora_actual, self.bajada_inicio, self.bajada_fin, self.intensidad_maxima, self.intensidad_minima)
             self.pi_pwm.ChangeDutyCycle(self.intensidad_actual)
+	    
+    def get_current_val(self):
+        return self.intensidad_actual
 
 # Constantes para el sensor DS18B20
 base_dir = '/sys/bus/w1/devices/'
@@ -130,51 +134,50 @@ def get_devices():
         device_list.append(AtlasI2C(address = i, moduletype = moduletype, name = response))
     return device_list
 
-def mde():
+def mde(fp):
     global state
     global sensor_do
     global sensor_ph
     global sensor_temp
     global leds
 
-
-	file_stat = os.stat(datalog_fname)
-	file = open(datalog_fname, 'a')
-	if file_stat.st_size == 0:
-		file.write(constants.DATALOG_HEADER)
-
     now = datetime.now() - timedelta(hours=4)
     current_time = now.strftime("%H:%M:%S")
-	file.write(now.strftime("%d/%m/%Y,%H:%M:%S,"))
+    
     #print("hora actual:", current_time)
 
     if state == constants.READ_PH:
+        fp.write(now.strftime("%d/%m/%Y,%H:%M:%S,"))
         print("READ_PH")
         sensor_ph.write("R")
         time.sleep(sensor_ph.long_timeout)
-		value = sensor_ph.read()
-		#file.write(value)
-        print(value)
+        value = sensor_ph.read()
+        fp.write(str(value)+",")
+        #print(value)
 		# Controlar GPIOS
         state = constants.READ_DO
     elif state == constants.READ_DO:
         print("READ_DO")
         sensor_do.write("R")
         time.sleep(sensor_do.long_timeout)
-        print(sensor_do.read())
+        value = sensor_do.read()
+        fp.write(str(value)+",")
 		# Controlar GPIOS
         state = constants.READ_TEMP
     elif state == constants.READ_TEMP:
         print("READ_TEMP")
         sensor_temp.write("R")
         time.sleep(sensor_temp.long_timeout)
-        print(sensor_temp.read())
+        value = sensor_temp.read()
+        fp.write(str(value))
         print(read_ds18b20())
 		# Controlar GPIOS
         state = constants.SET_LEDS
     elif state == constants.SET_LEDS:
         for led in leds:
             led.update(current_time)
+            fp.write(","+str(led.get_current_val()))
+        fp.write("\n")
         state = constants.READ_PH
 
 def main():
@@ -210,9 +213,15 @@ def main():
     leds.append(led_3)
     leds.append(led_4)
     leds.append(led_5)
+    
+    file_stat = os.stat(datalog_fname)
+    fp = open(datalog_fname, 'a')
+    
+    if file_stat.st_size == 0:
+        fp.write(constants.DATALOG_HEADER)
 
     while True:
-        mde()
+        mde(fp)
 
 if __name__ == '__main__':
     main()

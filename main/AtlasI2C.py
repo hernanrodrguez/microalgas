@@ -6,6 +6,7 @@ import fcntl
 import time
 import copy
 import string
+from string import printable
 
 
 class AtlasI2C:
@@ -142,6 +143,12 @@ class AtlasI2C:
             #print("char_list")
             #print(char_list)
             result = "Success " + self.get_device_info() + ": " +  str(''.join(char_list))
+            #print(result)
+            #result = float(str(''.join(char_list)))
+            try:
+                result = float(str(''.join(char for char in char_list if char in printable)))
+            except Exception:
+                pass
             #result = "Success: " +  str(''.join(char_list))
         else:
             result = "Error " + self.get_device_info() + ": " + error_code
