@@ -21,6 +21,7 @@ sensor_do = AtlasI2C()
 sensor_ph = AtlasI2C()
 sensor_temp = AtlasI2C()
 leds = []
+counter = 0
 
 datalog_fname = "logs/datalog.txt"
 debug_datalog_fname = "logs/debug_datalog.txt"
@@ -140,6 +141,7 @@ def mde(fp):
     global sensor_ph
     global sensor_temp
     global leds
+    global counter
 
     now = datetime.now() - timedelta(hours=4)
     current_time = now.strftime("%H:%M:%S")
@@ -149,34 +151,52 @@ def mde(fp):
     if state == constants.READ_PH:
         fp.write(now.strftime("%d/%m/%Y,%H:%M:%S,"))
         print("READ_PH")
-        sensor_ph.write("R")
-        time.sleep(sensor_ph.long_timeout)
-        value = sensor_ph.read()
-        fp.write(str(value)+",")
+        try:
+            sensor_ph.write("R")
+            time.sleep(sensor_ph.long_timeout)
+            value = sensor_ph.read()
+        except:
+            print("Hubo un error")
+            value = 0
+        fp.write("{:.2f},".format(value))
         #print(value)
 		# Controlar GPIOS
         state = constants.READ_DO
     elif state == constants.READ_DO:
         print("READ_DO")
-        sensor_do.write("R")
-        time.sleep(sensor_do.long_timeout)
-        value = sensor_do.read()
-        fp.write(str(value)+",")
+        try:
+            sensor_do.write("R")
+            time.sleep(sensor_do.long_timeout)
+            value = sensor_do.read()
+        except:
+            print("Hubo un error")
+            value = 0
+        fp.write("{:.2f},".format(value))
 		# Controlar GPIOS
         state = constants.READ_TEMP
     elif state == constants.READ_TEMP:
         print("READ_TEMP")
-        sensor_temp.write("R")
-        time.sleep(sensor_temp.long_timeout)
-        value = sensor_temp.read()
-        fp.write(str(value))
+        try:
+            sensor_temp.write("R")
+            time.sleep(sensor_temp.long_timeout)
+            value = sensor_temp.read()
+        except:
+            print("Hubo un error")
+            value = 0
+        fp.write("{:.2f}".format(value))
         print(read_ds18b20())
 		# Controlar GPIOS
         state = constants.SET_LEDS
     elif state == constants.SET_LEDS:
+        counter += 1
+        GPIO.output(8,  (counter%2)==0)
+        GPIO.output(7,  (counter%2)!=0)
+        GPIO.output(1,  (counter%2)==0)
+        GPIO.output(12, (counter%2)!=0)
+        GPIO.output(16, (counter%2)==0)
         for led in leds:
             led.update(current_time)
-            fp.write(","+str(led.get_current_val()))
+            fp.write(",{:.2f}".format(led.get_current_val()))
         fp.write("\n")
         state = constants.READ_PH
 
@@ -185,8 +205,20 @@ def main():
     global sensor_ph
     global sensor_temp
     global leds
+    global counter
+
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(8, GPIO.OUT)
+    GPIO.setup(7, GPIO.OUT)
+    GPIO.setup(1, GPIO.OUT)
+    GPIO.setup(12, GPIO.OUT)
+    GPIO.setup(16, GPIO.OUT)
+
     ezo_device_list = get_devices()
 
+    if len(ezo_device_list) < 1:
+        print("No se detectaron sensores conectados")
+        quit()
     device = ezo_device_list[0]
     print_devices(ezo_device_list, device)
 
@@ -217,7 +249,7 @@ def main():
     file_stat = os.stat(datalog_fname)
     fp = open(datalog_fname, 'a')
     
-    if file_stat.st_size == 0:
+    if file_stat.st_size < 10:
         fp.write(constants.DATALOG_HEADER)
 
     while True:
