@@ -81,7 +81,7 @@ class Luz():
             print("LEDS BAJANDO - PWM:", self.intensidad_actual)
             self.intensidad_actual = remap(hora_actual, self.bajada_inicio, self.bajada_fin, self.intensidad_maxima, self.intensidad_minima)
             self.pi_pwm.ChangeDutyCycle(self.intensidad_actual)
-	    
+
     def get_current_val(self):
         return self.intensidad_actual
 
@@ -135,6 +135,13 @@ def get_devices():
         device_list.append(AtlasI2C(address = i, moduletype = moduletype, name = response))
     return device_list
 
+def log_error(now, e):
+	print("Log error:", e)
+	fname_err = now.strftime("logs/err_%Y-%m-%d_%H-%M-%S.txt")
+	fp_err = open(fname_err, 'a')
+	fp_err.write(e)
+	fp_err.close()
+
 def mde(fp):
     global state
     global sensor_do
@@ -145,7 +152,7 @@ def mde(fp):
 
     now = datetime.now() - timedelta(hours=4)
     current_time = now.strftime("%H:%M:%S")
-    
+
     #print("hora actual:", current_time)
 
     if state == constants.READ_PH:
@@ -155,8 +162,8 @@ def mde(fp):
             sensor_ph.write("R")
             time.sleep(sensor_ph.long_timeout)
             value = sensor_ph.read()
-        except:
-            print("Hubo un error")
+        except Exception as e:
+			log_error(now, e)
             value = 0
         fp.write("{:.2f},".format(value))
         #print(value)
@@ -168,8 +175,8 @@ def mde(fp):
             sensor_do.write("R")
             time.sleep(sensor_do.long_timeout)
             value = sensor_do.read()
-        except:
-            print("Hubo un error")
+        except Exception as e:
+            log_error(now, e)
             value = 0
         fp.write("{:.2f},".format(value))
 		# Controlar GPIOS
@@ -180,8 +187,8 @@ def mde(fp):
             sensor_temp.write("R")
             time.sleep(sensor_temp.long_timeout)
             value = sensor_temp.read()
-        except:
-            print("Hubo un error")
+        except Exception as e:
+            log_error(now, e)
             value = 0
         fp.write("{:.2f}".format(value))
         print(read_ds18b20())
@@ -245,10 +252,10 @@ def main():
     leds.append(led_3)
     leds.append(led_4)
     leds.append(led_5)
-    
+
     file_stat = os.stat(datalog_fname)
     fp = open(datalog_fname, 'a')
-    
+
     if file_stat.st_size < 10:
         fp.write(constants.DATALOG_HEADER)
 
