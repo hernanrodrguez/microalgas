@@ -215,11 +215,18 @@ def main():
     global counter
 
     GPIO.setmode(GPIO.BCM)
-    GPIO.setup(8, GPIO.OUT)
-    GPIO.setup(7, GPIO.OUT)
-    GPIO.setup(1, GPIO.OUT)
-    GPIO.setup(12, GPIO.OUT)
-    GPIO.setup(16, GPIO.OUT)
+
+	GPIO.setup(1, GPIO.OUT) 	# Bomba 1A
+	GPIO.setup(12, GPIO.OUT) 	# Bomba 1B
+
+	GPIO.setup(16, GPIO.OUT) 	# Bomba 2A
+	GPIO.setup(19, GPIO.OUT) 	# Bomba 2B
+
+    GPIO.setup(8, GPIO.OUT)		# Rele 1
+    GPIO.setup(7, GPIO.OUT)		# Rele 2
+	GPIO.setup(5, GPIO.OUT)		# Rele 3
+    GPIO.setup(6, GPIO.OUT)		# Rele 4
+	GPIO.setup(18, GPIO.OUT)	# Rele 5
 
     ezo_device_list = get_devices()
 
@@ -241,9 +248,9 @@ def main():
     current_time = now.strftime("%H:%M:%S")
     print("hora actual:", current_time)
 
-    led_1 = Luz(22, "08:00:00", "12:00:00", "14:00:00", "18:00:00", 90, 10, current_time)
-    led_2 = Luz(23, "21:30:00", "21:35:00", "21:40:00", "21:45:00", 90, 10, current_time)
-    led_3 = Luz(24, "21:00:00", "22:00:00", "22:10:00", "23:00:00", 90, 10, current_time)
+    led_1 = Luz(24, "08:00:00", "12:00:00", "14:00:00", "18:00:00", 90, 10, current_time)
+    led_2 = Luz(22, "21:30:00", "21:35:00", "21:40:00", "21:45:00", 90, 10, current_time)
+    led_3 = Luz(23, "21:00:00", "22:00:00", "22:10:00", "23:00:00", 90, 10, current_time)
     led_4 = Luz(25, "08:00:00", "12:00:00", "14:00:00", "18:00:00", 90, 10, current_time)
     led_5 = Luz(27, "08:00:00", "12:00:00", "14:00:00", "18:00:00", 90, 10, current_time)
 
